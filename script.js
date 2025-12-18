@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tabContents.forEach(content => {
                 if (content.id === targetId) {
                     content.style.display = 'block';
-                    // Trigger reflow/anim
                     setTimeout(() => content.style.opacity = '1', 10);
                 } else {
                     content.style.display = 'none';
@@ -21,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Initialize wheel if switching to it and empty
             if (targetId === 'wheel-view' && wheelData.length === 0) {
                 initWheelData();
                 renderWheel();
@@ -45,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isDictionaryLoaded = false;
     let currentGameMode = 'scrabble';
 
-    // Scrabble points
     const scrabblePoints = {
         'A': 1, 'E': 1, 'I': 1, 'N': 1, 'O': 1, 'R': 1, 'S': 1, 'T': 1, 'U': 1, 'L': 1,
         'D': 2, 'M': 2, 'G': 2,
@@ -68,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
         'wordle': { showPoints: false, name: 'Wordle' }
     };
 
-    // Game Mode Event
     gameSelect.addEventListener('change', (e) => {
         currentGameMode = e.target.value;
         if (!resultContainer.classList.contains('hidden') && wordInput.value.trim() !== "") {
@@ -76,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Load Dictionary
     fetch('dictionary.txt')
         .then(response => {
             if (!response.ok) throw new Error("Impossible de charger le dictionnaire.");
@@ -224,13 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Infinite scroll implementation
-    const itemHeight = 50; // approx height + margin
-    const bufferSize = 20; // items to render at once
+    const itemHeight = 50;
+    const bufferSize = 20;
 
     function renderWheel() {
         wheelElement.innerHTML = '';
-        // Create initial buffer
-        for (let i = 0; i < 50; i++) { // Start with 50 items
+        for (let i = 0; i < 50; i++) {
             const item = createWheelItem(wheelData[i % wheelData.length]);
             wheelElement.appendChild(item);
         }
@@ -242,8 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
         div.className = 'wheel-item';
         div.textContent = text;
         div.onclick = () => {
-            // Center this item
-            // This is complex, simplified for now: just verify
             wordInput.value = text;
             tabs[0].click(); // Switch to checker
             setTimeout(checkWord, 300);
@@ -251,44 +243,99 @@ document.addEventListener('DOMContentLoaded', () => {
         return div;
     }
 
-    // Infinite Loop Logic
+    function getNextWord() {
+        const footerText = document.querySelector('footer p');
+
+        // --- 1. PRIORITY: FORCING MODE ---
+        if (forcingActive) {
+            forcingScrollsCount++;
+
+            if (forcingScrollsCount === forcingScrollsNeeded) {
+                // IT IS TIME
+                const target = forcingTargetWord;
+
+                // DEACTIVATE
+                forcingActive = false;
+                console.log("FORCING EXECUTED");
+
+                if (footerText && footerText.textContent.endsWith('.')) {
+                    footerText.textContent = footerText.textContent.slice(0, -1);
+                }
+
+                return target;
+            } else {
+                // Return RANDOM but AVOID target
+                if (wheelData.length > 0) {
+                    let randomWord = "";
+                    let attempts = 0;
+                    do {
+                        randomWord = wheelData[Math.floor(Math.random() * wheelData.length)];
+                        attempts++;
+                    } while (randomWord === forcingTargetWord && attempts < 10);
+                    return randomWord;
+                }
+            }
+        }
+
+        // --- 2. VRTX MODE ---
+        if (vrtxActive && vrtxTargetWord.length > 0) {
+
+            if (vrtxCurrentIndex >= vrtxTargetWord.length) {
+                // FINISHED SPELLING
+                vrtxActive = false;
+                console.log("VRTX FINISHED");
+                if (footerText && footerText.textContent.endsWith('.')) {
+                    footerText.textContent = footerText.textContent.slice(0, -1);
+                }
+                // Fallthrough to random
+            } else {
+                const targetLetter = vrtxTargetWord[vrtxCurrentIndex];
+                vrtxCurrentIndex++;
+
+                const rankObj = (window.WORDS_BY_RANK && window.WORDS_BY_RANK[vrtxTargetRank]) ? window.WORDS_BY_RANK[vrtxTargetRank] : null;
+                const candidates = (rankObj && rankObj[targetLetter]) ? rankObj[targetLetter] : null;
+
+                if (candidates && candidates.length > 0) {
+                    const filtered = candidates.filter(w => w !== vrtxTargetWord);
+                    if (filtered.length > 0) {
+                        return filtered[Math.floor(Math.random() * filtered.length)];
+                    }
+                }
+            }
+        }
+
+        // --- 3. DEFAULT RANDOM ---
+        if (wheelData.length > 0) {
+            return wheelData[Math.floor(Math.random() * wheelData.length)];
+        }
+        return "CHARGEMENT...";
+    }
+
     wheelElement.addEventListener('scroll', () => {
         const scrollTop = wheelElement.scrollTop;
         const scrollHeight = wheelElement.scrollHeight;
         const clientHeight = wheelElement.clientHeight;
 
-        // If near bottom, append more items
         if (scrollTop + clientHeight > scrollHeight - 100) {
-            // Append 10 more random items
             for (let i = 0; i < 10; i++) {
-                // Use getNextWord logic (defined below or hoisted)
-                // Since getNextWord is defined later in file, we rely on hoisting/scope.
-                // Wait, function declarations are hoisted, but my getNextWord is inside DOMContentLoaded.
-                // It should be fine as long as it's defined in the same scope.
-                // However, I just added it at the END of the scope.
-                // So I need to call it effectively.
                 const word = getNextWord();
                 const item = createWheelItem(word);
                 wheelElement.appendChild(item);
             }
         }
-
         updateActiveItem();
     });
+
     function updateActiveItem() {
-        // Find item in center
         const center = wheelElement.scrollTop + (wheelElement.clientHeight / 2);
         const items = document.querySelectorAll('.wheel-item');
-
         let closest = null;
         let minDiff = Infinity;
 
         items.forEach(item => {
             const itemCenter = item.offsetTop + (item.offsetHeight / 2);
             const diff = Math.abs(center - itemCenter);
-
             item.classList.remove('active');
-
             if (diff < minDiff) {
                 minDiff = diff;
                 closest = item;
@@ -301,12 +348,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- VRTX MODE LOGIC ---
+    // --- VRTX MODE (Bas-Droit) ---
     const vrtxTrigger = document.getElementById('vrtx-trigger');
     const vrtxModal = document.getElementById('vrtx-modal');
     const vrtxWordInput = document.getElementById('vrtx-word');
     const vrtxCounter = document.getElementById('vrtx-counter');
-    const rankButtons = document.querySelectorAll('.rank-btn');
+    const rankButtons = document.querySelectorAll('.rank-btn'); // VRTX ranks
     const vrtxOkBtn = document.getElementById('vrtx-ok');
 
     let vrtxActive = false;
@@ -314,39 +361,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let vrtxTargetRank = 1;
     let vrtxCurrentIndex = 0;
 
-    // Trigger Logic
-    let clickCount = 0;
-    let clickTimer;
-    let longPressTimer;
+    let vrtxClickCount = 0;
+    let vrtxClickTimer;
+    let vrtxLongPressTimer;
 
-    // Triple Click
-    vrtxTrigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        clickCount++;
-        clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => {
-            clickCount = 0;
-        }, 500);
-
-        if (clickCount === 3) {
-            openVrtxModal();
-            clickCount = 0;
-        }
-    });
-
-    // Long Press
-    vrtxTrigger.addEventListener('mousedown', () => {
-        longPressTimer = setTimeout(openVrtxModal, 1500);
-    });
-    vrtxTrigger.addEventListener('mouseup', () => clearTimeout(longPressTimer));
-    vrtxTrigger.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
-
-    // Touch support for mobile
-    vrtxTrigger.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // Prevent ghost clicks
-        longPressTimer = setTimeout(openVrtxModal, 1500);
-    });
-    vrtxTrigger.addEventListener('touchend', () => clearTimeout(longPressTimer));
+    if (vrtxTrigger) {
+        vrtxTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            vrtxClickCount++;
+            clearTimeout(vrtxClickTimer);
+            vrtxClickTimer = setTimeout(() => { vrtxClickCount = 0; }, 500);
+            if (vrtxClickCount === 3) {
+                openVrtxModal();
+                vrtxClickCount = 0;
+            }
+        });
+        vrtxTrigger.addEventListener('mousedown', () => { vrtxLongPressTimer = setTimeout(openVrtxModal, 1500); });
+        vrtxTrigger.addEventListener('mouseup', () => clearTimeout(vrtxLongPressTimer));
+        vrtxTrigger.addEventListener('mouseleave', () => clearTimeout(vrtxLongPressTimer));
+        vrtxTrigger.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            vrtxLongPressTimer = setTimeout(openVrtxModal, 1500);
+        });
+        vrtxTrigger.addEventListener('touchend', () => clearTimeout(vrtxLongPressTimer));
+    }
 
     function openVrtxModal() {
         vrtxModal.classList.remove('hidden');
@@ -357,14 +395,14 @@ document.addEventListener('DOMContentLoaded', () => {
         vrtxWordInput.focus();
     }
 
-    function closeVrtxModal() {
+    // Close modal helper
+    function closeModals() {
         vrtxModal.classList.add('hidden');
+        forcingModal.classList.add('hidden');
     }
 
-    // Modal Interactions
     vrtxWordInput.addEventListener('input', () => {
-        const text = vrtxWordInput.value.trim();
-        vrtxCounter.textContent = `(${text.length})`;
+        vrtxCounter.textContent = `(${vrtxWordInput.value.trim().length})`;
     });
 
     rankButtons.forEach(btn => {
@@ -376,88 +414,123 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateRankButtons() {
         rankButtons.forEach(btn => {
-            if (parseInt(btn.dataset.rank) === vrtxTargetRank) {
-                btn.classList.add('selected');
-            } else {
-                btn.classList.remove('selected');
-            }
+            if (parseInt(btn.dataset.rank) === vrtxTargetRank) btn.classList.add('selected');
+            else btn.classList.remove('selected');
         });
     }
 
     vrtxOkBtn.addEventListener('click', () => {
         const word = vrtxWordInput.value.trim().toUpperCase();
         const footerText = document.querySelector('footer p');
-
         if (word.length > 0) {
             vrtxTargetWord = word;
             vrtxActive = true;
             vrtxCurrentIndex = 0;
-            console.log("VRTX ACTIVATED:", vrtxTargetWord, "Rank:", vrtxTargetRank);
-
-            // Visual confirmation
-            if (footerText && !footerText.textContent.endsWith('.')) {
-                footerText.textContent += ".";
-            }
-
-            // Switch to Wheel Tab
-            const wheelTab = document.querySelector('.tab-btn[data-tab="wheel"]');
-            if (wheelTab) wheelTab.click();
-
+            console.log("VRTX ACTIVATED:", vrtxTargetWord);
+            if (footerText && !footerText.textContent.endsWith('.')) footerText.textContent += ".";
+            document.querySelector('.tab-btn[data-tab="wheel"]').click();
         } else {
             vrtxActive = false;
-            // Remove confirmation
-            if (footerText && footerText.textContent.endsWith('.')) {
-                footerText.textContent = footerText.textContent.slice(0, -1);
-            }
+            if (footerText && footerText.textContent.endsWith('.')) footerText.textContent = footerText.textContent.slice(0, -1);
         }
-        closeVrtxModal();
+        closeModals();
     });
 
-    // --- Forcing Logic Injected into Wheel ---
-    // Override the append logic scroll handler
 
-    // Remove old listener to avoid double binding if re-run (not needed here but good practice)
-    // Actually we just added to the existing script, so we need to modify the scroll listener logic above.
-    // Instead of replacing the WHOLE listener which is hard, I will modify the `createWheelItem` logic or creating `getNextWord`.
+    // --- FORCING MODE (Bas-Gauche) ---
+    const forcingTrigger = document.getElementById('forcing-trigger');
+    const forcingModal = document.getElementById('forcing-modal');
+    const forcingWordInput = document.getElementById('forcing-word');
+    const forcingCounter = document.getElementById('forcing-counter');
+    const forcingRankButtons = document.querySelectorAll('.forcing-rank-btn');
+    const forcingOkBtn = document.getElementById('forcing-ok');
 
-    function getNextWord() {
-        if (vrtxActive && vrtxTargetWord.length > 0) {
-            // Get current target letter
-            // Loop index if it exceeds word length
-            const targetLetter = vrtxTargetWord[vrtxCurrentIndex % vrtxTargetWord.length];
-            vrtxCurrentIndex++; // Advance for next time
+    let forcingActive = false;
+    let forcingTargetWord = "";
+    let forcingScrollsNeeded = 1;
+    let forcingScrollsCount = 0;
 
-            // Find candidates
-            // WORDS_BY_RANK[rank][letter]
-            // Safe access
-            const rankObj = (window.WORDS_BY_RANK && window.WORDS_BY_RANK[vrtxTargetRank]) ? window.WORDS_BY_RANK[vrtxTargetRank] : null;
-            const candidates = (rankObj && rankObj[targetLetter]) ? rankObj[targetLetter] : null;
+    let forcingClickCount = 0;
+    let forcingClickTimer;
+    let forcingLongPressTimer;
 
-            if (candidates && candidates.length > 0) {
-                // Filter out the target word itself to keep the secret
-                const filtered = candidates.filter(w => w !== vrtxTargetWord);
-                if (filtered.length > 0) {
-                    const randomIdx = Math.floor(Math.random() * filtered.length);
-                    return filtered[randomIdx];
-                }
+    if (forcingTrigger) {
+        forcingTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            forcingClickCount++;
+            clearTimeout(forcingClickTimer);
+            forcingClickTimer = setTimeout(() => { forcingClickCount = 0; }, 500);
+            if (forcingClickCount === 3) {
+                openForcingModal();
+                forcingClickCount = 0;
             }
-            // Fallback if no candidate found (e.g. rare letter at specific rank): return random
-        }
-
-        // Default Random
-        if (wheelData.length > 0) {
-            const randomIdx = Math.floor(Math.random() * wheelData.length);
-            return wheelData[randomIdx];
-        }
-        return "CHARGEMENT...";
+        });
+        forcingTrigger.addEventListener('mousedown', () => { forcingLongPressTimer = setTimeout(openForcingModal, 1500); });
+        forcingTrigger.addEventListener('mouseup', () => clearTimeout(forcingLongPressTimer));
+        forcingTrigger.addEventListener('mouseleave', () => clearTimeout(forcingLongPressTimer));
+        forcingTrigger.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            forcingLongPressTimer = setTimeout(openForcingModal, 1500);
+        });
+        forcingTrigger.addEventListener('touchend', () => clearTimeout(forcingLongPressTimer));
     }
 
-    // We need to Monkey Patch or modify the Scroll Listener to use `getNextWord()`
-    // Since I cannot allow multiple replace calls easily on the same block logic without context,
-    // I will replace the scroll listener block entirely.
+    function openForcingModal() {
+        forcingModal.classList.remove('hidden');
+        forcingWordInput.value = '';
+        forcingCounter.textContent = '(0)';
+        forcingScrollsNeeded = 1;
+        updateForcingRankButtons();
+        forcingWordInput.focus();
+    }
 
-    // Re-attaching scroll listener with new logic
-    wheelElement.onscroll = null; // Clear old one if any (though addEventListener stacks)
-    // Actually, to be safe, I'm just defining a new function that handles the appending and replacing the old scroll logic block in the file.
+    if (forcingWordInput) {
+        forcingWordInput.addEventListener('input', () => {
+            forcingCounter.textContent = `(${forcingWordInput.value.trim().length})`;
+        });
+    }
+
+    if (forcingRankButtons) {
+        forcingRankButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                forcingScrollsNeeded = parseInt(btn.dataset.scrolls);
+                updateForcingRankButtons();
+            });
+        });
+    }
+
+    function updateForcingRankButtons() {
+        if (forcingRankButtons) {
+            forcingRankButtons.forEach(btn => {
+                if (parseInt(btn.dataset.scrolls) === forcingScrollsNeeded) btn.classList.add('selected');
+                else btn.classList.remove('selected');
+            });
+        }
+    }
+
+    if (forcingOkBtn) {
+        forcingOkBtn.addEventListener('click', () => {
+            const word = forcingWordInput.value.trim().toUpperCase();
+            const footerText = document.querySelector('footer p');
+            if (word.length > 0) {
+                forcingTargetWord = word;
+                forcingActive = true;
+                forcingScrollsCount = 0;
+                console.log("FORCING ACTIVATED:", forcingTargetWord);
+                if (footerText && !footerText.textContent.endsWith('.')) footerText.textContent += ".";
+                document.querySelector('.tab-btn[data-tab="wheel"]').click();
+
+                // Disable VRTX if active
+                if (vrtxActive) {
+                    vrtxActive = false;
+                    console.log("VRTX OVERRIDDEN");
+                }
+            } else {
+                forcingActive = false;
+                if (footerText && footerText.textContent.endsWith('.')) footerText.textContent = footerText.textContent.slice(0, -1);
+            }
+            closeModals();
+        });
+    }
 
 });
