@@ -548,11 +548,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const footerText = document.querySelector('footer p');
             if (word.length > 0) {
                 forcingTargetWord = word;
+
+                // --- CUSTOM WORD SUPPORT ---
+                // Add to dictionary so it validates as "VRAI" if checked
+                if (!dictionary.has(forcingTargetWord)) {
+                    dictionary.add(forcingTargetWord);
+                    dictionaryArray.push(forcingTargetWord); // Optional, allows it to appear in random later
+                }
+
                 forcingActive = true;
                 forcingScrollsCount = 0;
-                console.log("FORCING ACTIVATED:", forcingTargetWord);
+                console.log("FORCING ACTIVATED target:", forcingTargetWord, "at count:", forcingScrollsNeeded);
+
                 if (footerText && !footerText.textContent.endsWith('.')) footerText.textContent += ".";
-                document.querySelector('.tab-btn[data-tab="wheel"]').click();
+
+                // Switch to wheel view
+                const wheelTab = document.querySelector('.tab-btn[data-tab="wheel"]');
+                if (wheelTab) wheelTab.click();
 
                 // Disable VRTX if active
                 if (vrtxActive) {
