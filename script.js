@@ -235,11 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const div = document.createElement('div');
         div.className = 'wheel-item';
         div.textContent = text;
-        div.onclick = () => {
-            wordInput.value = text;
-            tabs[0].click(); // Switch to checker
-            setTimeout(checkWord, 300);
-        };
         return div;
     }
 
