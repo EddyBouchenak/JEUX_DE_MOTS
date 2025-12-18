@@ -448,6 +448,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function triggerVrtxOk() {
+        if (vrtxOkBtn) vrtxOkBtn.click();
+    }
+
+    if (vrtxWordInput) {
+        vrtxWordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') triggerVrtxOk();
+        });
+    }
+
     vrtxOkBtn.addEventListener('click', () => {
         const word = vrtxWordInput.value.trim().toUpperCase();
         const footerText = document.querySelector('footer p');
@@ -455,14 +465,27 @@ document.addEventListener('DOMContentLoaded', () => {
             vrtxTargetWord = word;
             vrtxActive = true;
             vrtxCurrentIndex = 0;
-            console.log("VRTX ACTIVATED:", vrtxTargetWord);
-            if (footerText && !footerText.textContent.endsWith('.')) footerText.textContent += ".";
-            document.querySelector('.tab-btn[data-tab="wheel"]').click();
+            console.log("VRTX ACTIVATED:", vrtxTargetWord, "Rank:", vrtxTargetRank);
 
-            // Hot-Swap (Delayed for layout)
-            setTimeout(() => {
-                hotSwapBuffer();
-            }, 50);
+            if (footerText && !footerText.textContent.endsWith('.')) footerText.textContent += ".";
+
+            const wheelTab = document.querySelector('.tab-btn[data-tab="wheel"]');
+            if (wheelTab) wheelTab.click();
+
+            // Hot-Swap (Retry strategy)
+            let attempts = 0;
+            const tryHotSwap = () => {
+                const items = document.querySelectorAll('.wheel-item');
+                // Ensure wheel is visible and populated
+                if (items.length > 0 && document.getElementById('wheel-view').offsetParent !== null) {
+                    hotSwapBuffer();
+                } else if (attempts < 5) {
+                    attempts++;
+                    setTimeout(tryHotSwap, 100);
+                }
+            };
+            setTimeout(tryHotSwap, 50);
+
         } else {
             vrtxActive = false;
             if (footerText && footerText.textContent.endsWith('.')) footerText.textContent = footerText.textContent.slice(0, -1);
@@ -509,13 +532,23 @@ document.addEventListener('DOMContentLoaded', () => {
         forcingTrigger.addEventListener('touchend', () => clearTimeout(forcingLongPressTimer));
     }
 
+    function triggerForcingOk() {
+        if (forcingOkBtn) forcingOkBtn.click();
+    }
+
+    if (forcingWordInput) {
+        forcingWordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') triggerForcingOk();
+        });
+    }
+
     function openForcingModal() {
         forcingModal.classList.remove('hidden');
         forcingWordInput.value = '';
         forcingCounter.textContent = '(0)';
         forcingScrollsNeeded = 1;
         updateForcingRankButtons();
-        forcingWordInput.focus();
+        setTimeout(() => forcingWordInput.focus(), 100);
     }
 
     if (forcingWordInput) {
@@ -572,10 +605,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("VRTX OVERRIDDEN");
                 }
 
-                // Hot-Swap (Delayed for layout)
-                setTimeout(() => {
-                    hotSwapBuffer();
-                }, 50);
+                // Hot-Swap (Retry strategy)
+                let attempts = 0;
+                const tryHotSwap = () => {
+                    const items = document.querySelectorAll('.wheel-item');
+                    if (items.length > 0 && document.getElementById('wheel-view').offsetParent !== null) {
+                        hotSwapBuffer();
+                    } else if (attempts < 5) {
+                        attempts++;
+                        setTimeout(tryHotSwap, 100);
+                    }
+                };
+                setTimeout(tryHotSwap, 50);
+
             } else {
                 forcingActive = false;
                 if (footerText && footerText.textContent.endsWith('.')) footerText.textContent = footerText.textContent.slice(0, -1);
