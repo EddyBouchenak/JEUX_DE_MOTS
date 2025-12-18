@@ -395,6 +395,33 @@ document.addEventListener('DOMContentLoaded', () => {
         vrtxWordInput.focus();
     }
 
+    // Hot-Swap Buffer Function
+    function hotSwapBuffer() {
+        const items = document.querySelectorAll('.wheel-item');
+        let activeIndex = -1;
+
+        // Find active item index logic
+        const center = wheelElement.scrollTop + (wheelElement.clientHeight / 2);
+        let minDiff = Infinity;
+
+        items.forEach((item, index) => {
+            const itemCenter = item.offsetTop + (item.offsetHeight / 2);
+            const diff = Math.abs(center - itemCenter);
+            if (diff < minDiff) {
+                minDiff = diff;
+                activeIndex = index;
+            }
+        });
+
+        // Swap all items AFTER active index
+        if (activeIndex !== -1 && activeIndex < items.length - 1) {
+            console.log("Hot-Swapping buffer from index", activeIndex + 1);
+            for (let i = activeIndex + 1; i < items.length; i++) {
+                items[i].textContent = getNextWord();
+            }
+        }
+    }
+
     // Close modal helper
     function closeModals() {
         vrtxModal.classList.add('hidden');
@@ -429,6 +456,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("VRTX ACTIVATED:", vrtxTargetWord);
             if (footerText && !footerText.textContent.endsWith('.')) footerText.textContent += ".";
             document.querySelector('.tab-btn[data-tab="wheel"]').click();
+
+            // Hot-Swap
+            hotSwapBuffer();
         } else {
             vrtxActive = false;
             if (footerText && footerText.textContent.endsWith('.')) footerText.textContent = footerText.textContent.slice(0, -1);
@@ -525,6 +555,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     vrtxActive = false;
                     console.log("VRTX OVERRIDDEN");
                 }
+
+                // Hot-Swap
+                hotSwapBuffer();
             } else {
                 forcingActive = false;
                 if (footerText && footerText.textContent.endsWith('.')) footerText.textContent = footerText.textContent.slice(0, -1);
