@@ -350,6 +350,78 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- VRTX MODE (Bas-Droit) ---
+    const vrtxTrigger = document.getElementById('vrtx-trigger');
+    const vrtxModal = document.getElementById('vrtx-modal');
+    const vrtxWordInput = document.getElementById('vrtx-word');
+    const vrtxCounter = document.getElementById('vrtx-counter');
+    const rankButtons = document.querySelectorAll('.rank-btn'); // VRTX ranks
+    const vrtxOkBtn = document.getElementById('vrtx-ok');
+
+    let vrtxActive = false;
+    let vrtxTargetWord = "";
+    let vrtxTargetRank = 1;
+    let vrtxCurrentIndex = 0;
+
+    let vrtxClickCount = 0;
+    let vrtxClickTimer;
+    let vrtxLongPressTimer;
+
+    if (vrtxTrigger) {
+        vrtxTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            vrtxClickCount++;
+            clearTimeout(vrtxClickTimer);
+            vrtxClickTimer = setTimeout(() => { vrtxClickCount = 0; }, 500);
+            if (vrtxClickCount === 3) {
+                openVrtxModal();
+                vrtxClickCount = 0;
+            }
+        });
+        vrtxTrigger.addEventListener('mousedown', () => { vrtxLongPressTimer = setTimeout(openVrtxModal, 1500); });
+        vrtxTrigger.addEventListener('mouseup', () => clearTimeout(vrtxLongPressTimer));
+        vrtxTrigger.addEventListener('mouseleave', () => clearTimeout(vrtxLongPressTimer));
+        vrtxTrigger.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            vrtxLongPressTimer = setTimeout(openVrtxModal, 1500);
+        });
+        vrtxTrigger.addEventListener('touchend', () => clearTimeout(vrtxLongPressTimer));
+    }
+
+    function openVrtxModal() {
+        vrtxModal.classList.remove('hidden');
+        vrtxWordInput.value = '';
+        vrtxCounter.textContent = '(0)';
+        vrtxTargetRank = 1;
+        updateRankButtons();
+        vrtxWordInput.focus();
+    }
+
+
+    // Close modal helper
+    function closeModals() {
+        vrtxModal.classList.add('hidden');
+        forcingModal.classList.add('hidden');
+    }
+
+    vrtxWordInput.addEventListener('input', () => {
+        vrtxCounter.textContent = `(${vrtxWordInput.value.trim().length})`;
+    });
+
+    rankButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            vrtxTargetRank = parseInt(btn.dataset.rank);
+            updateRankButtons();
+        });
+    });
+
+    function updateRankButtons() {
+        rankButtons.forEach(btn => {
+            if (parseInt(btn.dataset.rank) === vrtxTargetRank) btn.classList.add('selected');
+            else btn.classList.remove('selected');
+        });
+    }
+
     // --- FORCING MODE (Bas-Gauche) ---
     const forcingTrigger = document.getElementById('forcing-trigger');
     const forcingModal = document.getElementById('forcing-modal');
@@ -388,37 +460,13 @@ document.addEventListener('DOMContentLoaded', () => {
         forcingTrigger.addEventListener('touchend', () => clearTimeout(forcingLongPressTimer));
     }
 
-    function openVrtxModal() {
-        vrtxModal.classList.remove('hidden');
-        vrtxWordInput.value = '';
-        vrtxCounter.textContent = '(0)';
-        vrtxTargetRank = 1;
-        updateRankButtons();
-        vrtxWordInput.focus();
-    }
-
-    // Close modal helper
-    function closeModals() {
-        vrtxModal.classList.add('hidden');
-        forcingModal.classList.add('hidden');
-    }
-
-    vrtxWordInput.addEventListener('input', () => {
-        vrtxCounter.textContent = `(${vrtxWordInput.value.trim().length})`;
-    });
-
-    rankButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            vrtxTargetRank = parseInt(btn.dataset.rank);
-            updateRankButtons();
-        });
-    });
-
-    function updateRankButtons() {
-        rankButtons.forEach(btn => {
-            if (parseInt(btn.dataset.rank) === vrtxTargetRank) btn.classList.add('selected');
-            else btn.classList.remove('selected');
-        });
+    function openForcingModal() {
+        forcingModal.classList.remove('hidden');
+        forcingWordInput.value = '';
+        forcingCounter.textContent = '(0)';
+        forcingScrollsNeeded = 1;
+        updateForcingRankButtons();
+        forcingWordInput.focus();
     }
 
     // --- INJECTION & SEQUENCE LOGIC ---
