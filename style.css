@@ -544,4 +544,31 @@ footer {
 .vrtx-ok-btn:active {
     box-shadow: none;
     transform: translateY(4px);
+}/* Forcing Styles */
+.forcing-trigger {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 50px;
+    z-index: 9999;
+    /* background: blue; Remove for proper hiding */
+    cursor: default;
+}
+
+.forcing-rank-btn {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--wood-border);
+    background: var(--wood-light);
+    color: var(--text-color);
+    font-size: 1.2rem;
+    padding: 0;
+    margin: 0;
+}
+
+.forcing-rank-btn.selected {
+    background: #e67e22;
+    color: white;
+    transform: scale(1.1);
 }
