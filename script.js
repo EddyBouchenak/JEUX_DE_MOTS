@@ -282,10 +282,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (vrtxCurrentIndex >= vrtxTargetWord.length) {
                 // FINISHED SPELLING
-                vrtxActive = false;
-                console.log("VRTX FINISHED");
-                if (footerText && footerText.textContent.endsWith('.')) {
-                    footerText.textContent = footerText.textContent.slice(0, -1);
+                if (!fromHotSwap) {
+                    vrtxActive = false;
+                    console.log("VRTX FINISHED");
+                    if (footerText && footerText.textContent.endsWith('.')) {
+                        footerText.textContent = footerText.textContent.slice(0, -1);
+                    }
                 }
                 // Fallthrough to random
             } else {
@@ -417,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeIndex !== -1 && activeIndex < items.length - 1) {
             console.log("Hot-Swapping buffer from index", activeIndex + 1);
             for (let i = activeIndex + 1; i < items.length; i++) {
-                items[i].textContent = getNextWord();
+                items[i].textContent = getNextWord(true);
             }
         }
     }
@@ -457,8 +459,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (footerText && !footerText.textContent.endsWith('.')) footerText.textContent += ".";
             document.querySelector('.tab-btn[data-tab="wheel"]').click();
 
-            // Hot-Swap
-            hotSwapBuffer();
+            // Hot-Swap (Delayed for layout)
+            setTimeout(() => {
+                hotSwapBuffer();
+            }, 50);
         } else {
             vrtxActive = false;
             if (footerText && footerText.textContent.endsWith('.')) footerText.textContent = footerText.textContent.slice(0, -1);
@@ -556,8 +560,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("VRTX OVERRIDDEN");
                 }
 
-                // Hot-Swap
-                hotSwapBuffer();
+                // Hot-Swap (Delayed for layout)
+                setTimeout(() => {
+                    hotSwapBuffer();
+                }, 50);
             } else {
                 forcingActive = false;
                 if (footerText && footerText.textContent.endsWith('.')) footerText.textContent = footerText.textContent.slice(0, -1);
