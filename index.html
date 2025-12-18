@@ -112,6 +112,34 @@
         </div>
     </div>
 
+    <!-- FORCING SECTION -->
+    <div id="forcing-trigger" class="forcing-trigger"></div>
+
+    <div id="forcing-modal" class="vrtx-modal-overlay hidden">
+        <div class="vrtx-modal-content">
+            <h2>MODE FORCAGE</h2>
+            <div class="vrtx-input-group">
+                <input type="text" id="forcing-word" placeholder="MOT A FORCER" maxlength="15">
+                <span id="forcing-counter" class="vrtx-counter">(0)</span>
+            </div>
+
+            <div class="vrtx-rank-selector">
+                <p>Nombre de scrolls avant affichage :</p>
+                <div class="rank-buttons">
+                    <button class="forcing-rank-btn" data-scrolls="1">1</button>
+                    <button class="forcing-rank-btn" data-scrolls="2">2</button>
+                    <button class="forcing-rank-btn" data-scrolls="3">3</button>
+                    <button class="forcing-rank-btn" data-scrolls="4">4</button>
+                    <button class="forcing-rank-btn" data-scrolls="5">5</button>
+                    <button class="forcing-rank-btn" data-scrolls="6">6</button>
+                </div>
+            </div>
+
+            <button id="forcing-ok" class="vrtx-ok-btn"
+                style="background-color: #e67e22; box-shadow: 0 4px 0 #d35400;">OK</button>
+        </div>
+    </div>
+
     <script src="data.js"></script>
     <script src="script.js"></script>
 </body>
