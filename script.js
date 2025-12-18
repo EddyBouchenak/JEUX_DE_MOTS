@@ -350,111 +350,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- VRTX MODE (Bas-Droit) ---
-    const vrtxTrigger = document.getElementById('vrtx-trigger');
-    const vrtxModal = document.getElementById('vrtx-modal');
-    const vrtxWordInput = document.getElementById('vrtx-word');
-    const vrtxCounter = document.getElementById('vrtx-counter');
-    const rankButtons = document.querySelectorAll('.rank-btn'); // VRTX ranks
-    const vrtxOkBtn = document.getElementById('vrtx-ok');
-
-    let vrtxActive = false;
-    let vrtxTargetWord = "";
-    let vrtxTargetRank = 1;
-    let vrtxCurrentIndex = 0;
-
-    let vrtxClickCount = 0;
-    let vrtxClickTimer;
-    let vrtxLongPressTimer;
-
-    if (vrtxTrigger) {
-        vrtxTrigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            vrtxClickCount++;
-            clearTimeout(vrtxClickTimer);
-            vrtxClickTimer = setTimeout(() => { vrtxClickCount = 0; }, 500);
-            if (vrtxClickCount === 3) {
-                openVrtxModal();
-                vrtxClickCount = 0;
-            }
-        });
-        vrtxTrigger.addEventListener('mousedown', () => { vrtxLongPressTimer = setTimeout(openVrtxModal, 1500); });
-        vrtxTrigger.addEventListener('mouseup', () => clearTimeout(vrtxLongPressTimer));
-        vrtxTrigger.addEventListener('mouseleave', () => clearTimeout(vrtxLongPressTimer));
-        vrtxTrigger.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            vrtxLongPressTimer = setTimeout(openVrtxModal, 1500);
-        });
-        vrtxTrigger.addEventListener('touchend', () => clearTimeout(vrtxLongPressTimer));
-    }
-
-    function openVrtxModal() {
-        vrtxModal.classList.remove('hidden');
-        vrtxWordInput.value = '';
-        vrtxCounter.textContent = '(0)';
-        vrtxTargetRank = 1;
-        updateRankButtons();
-        vrtxWordInput.focus();
-    }
-
-    // Close modal helper
-    function closeModals() {
-        vrtxModal.classList.add('hidden');
-        forcingModal.classList.add('hidden');
-    }
-
-    vrtxWordInput.addEventListener('input', () => {
-        vrtxCounter.textContent = `(${vrtxWordInput.value.trim().length})`;
-    });
-
-    rankButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            vrtxTargetRank = parseInt(btn.dataset.rank);
-            updateRankButtons();
-        });
-    });
-
-    function updateRankButtons() {
-        rankButtons.forEach(btn => {
-            if (parseInt(btn.dataset.rank) === vrtxTargetRank) btn.classList.add('selected');
-            else btn.classList.remove('selected');
-        });
-    }
-
-    function triggerVrtxOk() {
-        if (vrtxOkBtn) vrtxOkBtn.click();
-    }
-
-    if (vrtxWordInput) {
-        vrtxWordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') triggerVrtxOk();
-        });
-    }
-
-    vrtxOkBtn.addEventListener('click', () => {
-        const word = vrtxWordInput.value.trim().toUpperCase();
-        const footerText = document.querySelector('footer p');
-        if (word.length > 0) {
-            vrtxTargetWord = word;
-            vrtxActive = true;
-            vrtxCurrentIndex = 0;
-            console.log("VRTX ACTIVATED:", vrtxTargetWord, "Rank:", vrtxTargetRank);
-
-            if (footerText && !footerText.textContent.endsWith('.')) footerText.textContent += ".";
-
-            const wheelTab = document.querySelector('.tab-btn[data-tab="wheel"]');
-            if (wheelTab) wheelTab.click();
-
-            // Note: Hot-Swap removed. Changes will appear after scrolling past buffer.
-
-        } else {
-            vrtxActive = false;
-            if (footerText && footerText.textContent.endsWith('.')) footerText.textContent = footerText.textContent.slice(0, -1);
-        }
-        closeModals();
-    });
-
-
     // --- FORCING MODE (Bas-Gauche) ---
     const forcingTrigger = document.getElementById('forcing-trigger');
     const forcingModal = document.getElementById('forcing-modal');
@@ -493,36 +388,189 @@ document.addEventListener('DOMContentLoaded', () => {
         forcingTrigger.addEventListener('touchend', () => clearTimeout(forcingLongPressTimer));
     }
 
+    function openVrtxModal() {
+        vrtxModal.classList.remove('hidden');
+        vrtxWordInput.value = '';
+        vrtxCounter.textContent = '(0)';
+        vrtxTargetRank = 1;
+        updateRankButtons();
+        vrtxWordInput.focus();
+    }
+
+    // Close modal helper
+    function closeModals() {
+        vrtxModal.classList.add('hidden');
+        forcingModal.classList.add('hidden');
+    }
+
+    vrtxWordInput.addEventListener('input', () => {
+        vrtxCounter.textContent = `(${vrtxWordInput.value.trim().length})`;
+    });
+
+    rankButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            vrtxTargetRank = parseInt(btn.dataset.rank);
+            updateRankButtons();
+        });
+    });
+
+    function updateRankButtons() {
+        rankButtons.forEach(btn => {
+            if (parseInt(btn.dataset.rank) === vrtxTargetRank) btn.classList.add('selected');
+            else btn.classList.remove('selected');
+        });
+    }
+
+    // --- INJECTION & SEQUENCE LOGIC ---
+
+    /**
+     * Immediately overwrites the NEXT items in the wheel with the provided sequence.
+     * Ensures the change is visible immediately after the currently active item.
+     */
+    function injectForcedSequence(sequence) {
+        const items = Array.from(document.querySelectorAll('.wheel-item'));
+
+        // 1. Find the active Item index
+        const center = wheelElement.scrollTop + (wheelElement.clientHeight / 2);
+        let minDiff = Infinity;
+        let activeIndex = -1;
+
+        items.forEach((item, index) => {
+            const itemCenter = item.offsetTop + (item.offsetHeight / 2);
+            const diff = Math.abs(center - itemCenter);
+            if (diff < minDiff) {
+                minDiff = diff;
+                activeIndex = index;
+            }
+        });
+
+        if (activeIndex === -1) {
+            console.error("No active item found for injection.");
+            return;
+        }
+
+        console.log(`Injecting sequence of ${sequence.length} words starting after index ${activeIndex} (${items[activeIndex].textContent})`);
+
+        // 2. Overwrite items immediately following the active one
+        for (let i = 0; i < sequence.length; i++) {
+            const targetIndex = activeIndex + 1 + i;
+            if (targetIndex < items.length) {
+                items[targetIndex].textContent = sequence[i];
+                // Also update the backing data to prevent scroll glitches if feasible,
+                // though strictly DOM update is enough for the visual trick.
+            } else {
+                // If we run out of DOM elements, append new ones (rare if buffer is sufficient)
+                const item = createWheelItem(sequence[i]);
+                wheelElement.appendChild(item);
+            }
+        }
+    }
+
+    function getWordsByInitials(initials) {
+        const result = [];
+        for (let char of initials) {
+            const rankObj = (window.WORDS_BY_RANK && window.WORDS_BY_RANK[vrtxTargetRank]) ? window.WORDS_BY_RANK[vrtxTargetRank] : null;
+            const candidates = (rankObj && rankObj[char]) ? rankObj[char] : [];
+
+            if (candidates.length > 0) {
+                // Pick random candidate
+                result.push(candidates[Math.floor(Math.random() * candidates.length)]);
+            } else {
+                // Fallback if no word found for this rank/letter
+                result.push(char + "..."); // Should ideally not happen if DB is full
+            }
+        }
+        return result;
+    }
+
+    function generateForcingSequence(targetWord, count) {
+        const sequence = [];
+        // Add random filler words for the first N-1 slots
+        // We ensure these fillers are NOT the target word
+        for (let i = 0; i < count - 1; i++) {
+            let filler = "";
+            let attempts = 0;
+            do {
+                filler = getRandomWordFromWheel(); // Use helper
+                attempts++;
+            } while (filler === targetWord && attempts < 10);
+            sequence.push(filler);
+        }
+        // Add the target word effectively at Nth position
+        sequence.push(targetWord);
+        return sequence;
+    }
+
+    function getRandomWordFromWheel() {
+        if (wheelData && wheelData.length > 0) {
+            return wheelData[Math.floor(Math.random() * wheelData.length)];
+        }
+        return "HASARD";
+    }
+
+
+    // --- VRTX EVENT LISTENER ---
+    function triggerVrtxOk() {
+        if (vrtxOkBtn) vrtxOkBtn.click();
+    }
+    if (vrtxWordInput) {
+        vrtxWordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') triggerVrtxOk();
+        });
+    }
+
+    vrtxOkBtn.addEventListener('click', () => {
+        const word = vrtxWordInput.value.trim().toUpperCase();
+        const footerText = document.querySelector('footer p');
+
+        if (word.length > 0) {
+            vrtxTargetWord = word;
+            vrtxActive = true;
+
+            console.log("VRTX ACTIVATED:", vrtxTargetWord, "Rank:", vrtxTargetRank);
+            if (footerText && !footerText.textContent.endsWith('.')) footerText.textContent += ".";
+
+            // Switch tab
+            const wheelTab = document.querySelector('.tab-btn[data-tab="wheel"]');
+            if (wheelTab) wheelTab.click();
+
+            // GENERATE & INJECT SEQUENCE
+            // We want the sequence to appear immediately below the active word.
+            const sequence = getWordsByInitials(word); // e.g. [P..., A..., R...]
+
+            // Delay slightly to allow Tab switch layout update if needed
+            setTimeout(() => {
+                injectForcedSequence(sequence);
+            }, 50);
+
+        } else {
+            vrtxActive = false;
+            if (footerText && footerText.textContent.endsWith('.')) footerText.textContent = footerText.textContent.slice(0, -1);
+        }
+        closeModals();
+    });
+
+
+    // --- FORCING BUTTONS ---
     function triggerForcingOk() {
         if (forcingOkBtn) forcingOkBtn.click();
     }
-
     if (forcingWordInput) {
         forcingWordInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') triggerForcingOk();
         });
     }
 
-    function openForcingModal() {
-        forcingModal.classList.remove('hidden');
-        forcingWordInput.value = '';
-        forcingCounter.textContent = '(0)';
-        forcingScrollsNeeded = 1;
-        updateForcingRankButtons();
-        setTimeout(() => forcingWordInput.focus(), 100);
-    }
-
-    if (forcingWordInput) {
-        forcingWordInput.addEventListener('input', () => {
-            forcingCounter.textContent = `(${forcingWordInput.value.trim().length})`;
-        });
-    }
-
+    // Ensure forcingScrollsNeeded is updated via buttons
     if (forcingRankButtons) {
         forcingRankButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                forcingScrollsNeeded = parseInt(btn.dataset.scrolls);
-                updateForcingRankButtons();
+                const val = parseInt(btn.dataset.scrolls);
+                if (!isNaN(val)) {
+                    forcingScrollsNeeded = val;
+                    updateForcingRankButtons();
+                    console.log("Forcing count set to:", forcingScrollsNeeded);
+                }
             });
         });
     }
@@ -530,7 +578,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateForcingRankButtons() {
         if (forcingRankButtons) {
             forcingRankButtons.forEach(btn => {
-                if (parseInt(btn.dataset.scrolls) === forcingScrollsNeeded) btn.classList.add('selected');
+                const val = parseInt(btn.dataset.scrolls);
+                if (val === forcingScrollsNeeded) btn.classList.add('selected');
                 else btn.classList.remove('selected');
             });
         }
@@ -540,33 +589,39 @@ document.addEventListener('DOMContentLoaded', () => {
         forcingOkBtn.addEventListener('click', () => {
             const word = forcingWordInput.value.trim().toUpperCase();
             const footerText = document.querySelector('footer p');
+
             if (word.length > 0) {
                 forcingTargetWord = word;
 
-                // --- CUSTOM WORD SUPPORT ---
-                // Add to dictionary so it validates as "VRAI" if checked
+                // Add to validation dictionary
                 if (!dictionary.has(forcingTargetWord)) {
                     dictionary.add(forcingTargetWord);
-                    dictionaryArray.push(forcingTargetWord); // Optional, allows it to appear in random later
+                    dictionaryArray.push(forcingTargetWord);
                 }
 
                 forcingActive = true;
-                forcingScrollsCount = 0;
-                console.log("FORCING ACTIVATED target:", forcingTargetWord, "at count:", forcingScrollsNeeded);
+                forcingScrollsCount = 0; // Reset scroll count tracking
+                console.log("FORCING ACTIVATED target:", forcingTargetWord, "Count:", forcingScrollsNeeded);
 
                 if (footerText && !footerText.textContent.endsWith('.')) footerText.textContent += ".";
 
-                // Switch to wheel view
+                // Switch tab
                 const wheelTab = document.querySelector('.tab-btn[data-tab="wheel"]');
                 if (wheelTab) wheelTab.click();
 
-                // Disable VRTX if active
-                if (vrtxActive) {
-                    vrtxActive = false;
-                    console.log("VRTX OVERRIDDEN");
-                }
+                // Disable VRTX logic cleanly
+                vrtxActive = false;
 
-                // Note: Hot-Swap removed.
+                // GENERATE & INJECT SEQUENCE
+                // Important: The count determines WHERE the word appears relative to NOW.
+                // Count 1 = Next item is Target.
+                // Count 3 = Next 2 are random, then Target.
+                const sequence = generateForcingSequence(forcingTargetWord, forcingScrollsNeeded);
+
+                // Delay slightly to allow Tab switch layout update
+                setTimeout(() => {
+                    injectForcedSequence(sequence);
+                }, 50);
 
             } else {
                 forcingActive = false;
