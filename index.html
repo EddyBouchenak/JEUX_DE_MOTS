@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Juge de Mots</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Sniglet:wght@400;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="game-container">
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="checker">Vérificateur</button>
+            <button class="tab-btn" data-tab="wheel">Roue des Mots</button>
+        </nav>
+
+        <div id="checker-view" class="tab-content active">
+            <header>
+                <h1>Le Juge de Mots</h1>
+                <p>Le mot est-il valide ?</p>
+
+                <div class="game-selector-container">
+                    <label for="gameSelect">Jeu :</label>
+                    <select id="gameSelect">
+                        <optgroup label="Points & Scores">
+                            <option value="scrabble">Scrabble (Officiel)</option>
+                            <option value="wwf">Words With Friends</option>
+                            <option value="ruzzle">Ruzzle</option>
+                            <option value="wordfeud">Wordfeud</option>
+                        </optgroup>
+                        <optgroup label="Validation Rapide">
+                            <option value="bananagrams">Bananagrams</option>
+                            <option value="boggle">Boggle</option>
+                            <option value="scrabble_duplicate">Scrabble Duplicate</option>
+                        </optgroup>
+                        <optgroup label="Devinettes">
+                            <option value="motus">Motus / SUTOM</option>
+                            <option value="cemantix">Cémantix / Contexto</option>
+                            <option value="wordle">Wordle</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </header>
+
+            <main>
+                <div class="input-area">
+                    <input type="text" id="wordInput" placeholder="Tapez votre mot..." autocomplete="off"
+                        spellcheck="false" autofocus>
+                    <div class="buttons-row">
+                        <button id="checkBtn">Vérifier</button>
+                        <button id="randomBtn" class="secondary-btn" title="Mot aléatoire">🎲</button>
+                    </div>
+                </div>
+
+                <div id="result" class="result-container hidden">
+                    <div class="tiles-container" id="tiles"></div>
+                    <p id="message" class="message"></p>
+                    <div id="score" class="score hidden">Points : <span id="pointsValue">0</span></div>
+                </div>
+            </main>
+        </div>
+
+        <div id="wheel-view" class="tab-content" style="display:none;">
+            <header>
+                <h1>La Roue des Mots</h1>
+                <p>Faites tourner pour l'inspiration !</p>
+            </header>
+            <div class="wheel-container-wrapper">
+                <div class="wheel-pointer"></div>
+                <div id="infinite-wheel" class="infinite-wheel">
+                    <!-- Words will be injected here -->
+                </div>
+            </div>
+            <div class="wheel-controls">
+                <p id="selected-word-display">...</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>Inspiré par vos jeux de lettres préférés</p>
+        </footer>
+    </div>
+    <!-- VRTX SECTION -->
+    <div id="vrtx-trigger" class="vrtx-trigger"></div>
+
+    <div id="vrtx-modal" class="vrtx-modal-overlay hidden">
+        <div class="vrtx-modal-content">
+            <h2>VRTX MODE</h2>
+            <div class="vrtx-input-group">
+                <input type="text" id="vrtx-word" placeholder="MOT CIBLE" maxlength="15">
+                <span id="vrtx-counter" class="vrtx-counter">(0)</span>
+            </div>
+
+            <div class="vrtx-rank-selector">
+                <p>Sélectionnez le rang :</p>
+                <div class="rank-buttons">
+                    <button class="rank-btn" data-rank="1">1</button>
+                    <button class="rank-btn" data-rank="2">2</button>
+                    <button class="rank-btn" data-rank="3">3</button>
+                    <button class="rank-btn" data-rank="4">4</button>
+                    <button class="rank-btn" data-rank="5">5</button>
+                    <button class="rank-btn" data-rank="6">6</button>
+                </div>
+            </div>
+
+            <button id="vrtx-ok" class="vrtx-ok-btn">OK</button>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
