@@ -397,33 +397,6 @@ document.addEventListener('DOMContentLoaded', () => {
         vrtxWordInput.focus();
     }
 
-    // Hot-Swap Buffer Function
-    function hotSwapBuffer() {
-        const items = document.querySelectorAll('.wheel-item');
-        let activeIndex = -1;
-
-        // Find active item index logic
-        const center = wheelElement.scrollTop + (wheelElement.clientHeight / 2);
-        let minDiff = Infinity;
-
-        items.forEach((item, index) => {
-            const itemCenter = item.offsetTop + (item.offsetHeight / 2);
-            const diff = Math.abs(center - itemCenter);
-            if (diff < minDiff) {
-                minDiff = diff;
-                activeIndex = index;
-            }
-        });
-
-        // Swap all items AFTER active index
-        if (activeIndex !== -1 && activeIndex < items.length - 1) {
-            console.log("Hot-Swapping buffer from index", activeIndex + 1);
-            for (let i = activeIndex + 1; i < items.length; i++) {
-                items[i].textContent = getNextWord(true);
-            }
-        }
-    }
-
     // Close modal helper
     function closeModals() {
         vrtxModal.classList.add('hidden');
@@ -472,19 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const wheelTab = document.querySelector('.tab-btn[data-tab="wheel"]');
             if (wheelTab) wheelTab.click();
 
-            // Hot-Swap (Retry strategy)
-            let attempts = 0;
-            const tryHotSwap = () => {
-                const items = document.querySelectorAll('.wheel-item');
-                // Ensure wheel is visible and populated
-                if (items.length > 0 && document.getElementById('wheel-view').offsetParent !== null) {
-                    hotSwapBuffer();
-                } else if (attempts < 5) {
-                    attempts++;
-                    setTimeout(tryHotSwap, 100);
-                }
-            };
-            setTimeout(tryHotSwap, 50);
+            // Note: Hot-Swap removed. Changes will appear after scrolling past buffer.
 
         } else {
             vrtxActive = false;
@@ -605,18 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("VRTX OVERRIDDEN");
                 }
 
-                // Hot-Swap (Retry strategy)
-                let attempts = 0;
-                const tryHotSwap = () => {
-                    const items = document.querySelectorAll('.wheel-item');
-                    if (items.length > 0 && document.getElementById('wheel-view').offsetParent !== null) {
-                        hotSwapBuffer();
-                    } else if (attempts < 5) {
-                        attempts++;
-                        setTimeout(tryHotSwap, 100);
-                    }
-                };
-                setTimeout(tryHotSwap, 50);
+                // Note: Hot-Swap removed.
 
             } else {
                 forcingActive = false;
